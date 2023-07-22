@@ -21,6 +21,7 @@ mtvec_handler:
   li t1, CAUSE_ILLEGAL_INSTRUCTION
   csrr t0, mcause
   bne t0, t1, fail
+  beq t0, t1, pass
   csrr t0, mepc
 
   mret
