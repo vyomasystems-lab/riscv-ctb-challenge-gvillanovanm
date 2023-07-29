@@ -9,11 +9,11 @@ gen: clean
 
 compile:
 	@echo '[UpTickPro] Test Compilation ------'
-	riscv32-unknown-elf-gcc -march=rv32i -mabi=ilp32 -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles -I$(PWD)/work/common -T$(PWD)/test.ld test.S $(PWD)/work/common/crt.S -o test.elf
+	riscv64-unknown-elf-gcc -march=rv32i_zicsr_zifencei -mabi=ilp32 -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles -I$(PWD)/work/common -T$(PWD)/test.ld test.S $(PWD)/work/common/crt.S -o test.elf
 
 disass: compile
 	@echo '[UpTickPro] Test Disassembly ------'
-	riscv32-unknown-elf-objdump -D test.elf > test.disass
+	riscv64-unknown-elf-objdump -D test.elf > test.disass
 
 spike: compile
 	@echo '[UpTickPro] Spike Run ------'
@@ -28,7 +28,11 @@ sim: spike
 	head -n -4 rtl.dump > temp.dump
 	cp temp.dump rtl.dump
 	@echo '[UpTickPro] Comparison ------'
-	diff rtl.dump spike.dump
+	diff rtl.dump spike.dump >> diff_result.txt || true
+
+reg:
+	rm -rf regressions/
+	python3 run_regression.py
 
 clean:
 	@echo '[UpTickPro] Clean ------'

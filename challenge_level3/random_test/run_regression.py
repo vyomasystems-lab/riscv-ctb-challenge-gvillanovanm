@@ -4,8 +4,53 @@ import subprocess
 from collections import Counter
 import matplotlib.pyplot as plt
 
+def print_fail():
+    str = r"""
+ /$$$$$$$$/$$$$$   /$$$$$$ /$$      
+| $$_____/$$__  $$|_  $$_/| $$      
+| $$    | $$  \ $$  | $$  | $$      
+| $$$$$ | $$$$$$$$  | $$  | $$      
+| $$__/ | $$__  $$  | $$  | $$      
+| $$    | $$  | $$  | $$  | $$      
+| $$    | $$  | $$ /$$$$$$| $$$$$$$$
+|__/    |__/  |__/|______/|________/
+                                    
+                                    
+                                    """
+    print(str)
+
+def print_pass():
+    str = r"""
+ /$$$$$$$   /$$$$$$   /$$$$$$  /$$$$$$ 
+| $$__  $$ /$$__  $$ /$$__  $$/$$__  $$
+| $$  \ $$| $$  \ $$| $$  \__/ $$  \__/
+| $$$$$$$/| $$$$$$$$|  $$$$$$|  $$$$$$ 
+| $$____/ | $$__  $$ \____  $$\____  $$
+| $$      | $$  | $$ /$$  \ $$/$$  \ $$
+| $$      | $$  | $$|  $$$$$$/  $$$$$$/
+|__/      |__/  |__/ \______/ \______/ 
+                                    
+                                    
+                                    """
+    print(str)
+
+def print_bugs():
+    folder_path = './regression'
+    output_file_path = 'concatenated_bugs.txt'
+    with open(output_file_path, 'w') as output_file:
+        for root, _, files in os.walk(folder_path):
+            for filename in files:
+                if filename == 'output_instr.txt':
+                    file_path = os.path.join(root, filename)
+                    with open(file_path, 'r') as input_file:
+                        output_file.write(input_file.read())
+
+    # Read and print the content of the concatenated_bugs.txt file
+    with open(output_file_path, 'r') as concatenated_file:
+        print(concatenated_file.read())
+
 # Function to create an instruction histogram
-def create_instruction_histogram(file_path):
+def instruction_counter(file_path):
     instruction_counter = Counter()
     with open(file_path, 'r') as file:
         for line in file:
@@ -13,19 +58,8 @@ def create_instruction_histogram(file_path):
             instruction_counter[instruction] += 1
     return instruction_counter
 
-# Function to plot an instruction histogram
-def plot_instruction_histogram(instruction_histogram, title):
-    instructions, counts = zip(*instruction_histogram.items())
-    plt.figure(figsize=(10, 6))
-    plt.bar(instructions, counts)
-    plt.xlabel('Instructions')
-    plt.ylabel('Count')
-    plt.title(title)
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-
 # Function to extract values and execute spike-dasm
-def extract_values_and_execute(file_path, output_file_path):
+def transform_hex_in_mnemonics(file_path, output_file_path):
     values_list = []
     with open(file_path, 'r') as file:
         for line in file:
@@ -44,68 +78,89 @@ def extract_values_and_execute(file_path, output_file_path):
             except subprocess.CalledProcessError as e:
                 output_file.write(f"Error executing command for value {value}: {e.output}\n\n")
 
-# Run regressions
-def run_sim_and_move_files(regression_count):
-    # Create a directory for the regressions
-    os.makedirs("regressions", exist_ok=True)
+# Run regression
+def run(regression_count):
+    num_of_tests = 0
+    num_of_match = 0
+    num_of_mismatch = 0
+
+    # Create a directory for the regression
+    os.makedirs("regression", exist_ok=True)
 
     # Loop `regression_count` times
-    for i in range(1, regression_count + 1):
-        print(f"Running regression {i}")
+    for idx in range(1, regression_count + 1):
+        print(f"# -------------------------------------------------------------------")
+        print(f"#")
+        print(f"# Running test {idx}")
+        print(f"#")
+        print(f"# -------------------------------------------------------------------")
 
-        # make
+        # -----------------------------------------------------
+        # STEP 1: create/run a test
+        # -----------------------------------------------------
+
+        # Create/run the test (artefacts)
         subprocess.run(["make"])
+                
+        # --------------
+        # Save artefacts
+        # --------------
         
-        # Create a directory for each regression iteration
-        reg_dir = f"regressions/reg{i}"
+        # Create a directory for each test and move it
+        reg_dir = f"regression/test{idx}"
         os.makedirs(reg_dir, exist_ok=True)
 
-
-        # Move the generated files to the regression directory
+        # Move artefacts
         shutil.move("rtl.dump", os.path.join(reg_dir, "rtl.dump"))
         shutil.move("spike.dump", os.path.join(reg_dir, "spike.dump"))
         shutil.move("diff_result.txt", os.path.join(reg_dir, "diff_result.txt"))
         shutil.move("test.S", os.path.join(reg_dir, "test.S"))
 
-# extract_instr_analysis_and_hist
-def extract_instr_analysis_and_hist(num_of_reg):
-    enable_histogram_plot = 1
-    
-    for counter in range(num_of_reg):
-        idx = counter + 1
+        # -----------------------------------------------------
+        # STEP 2: compare
+        # -----------------------------------------------------
+
+        # Compute the diff between DUT and refmod ("compare") -> test<num>/diff_bug.txt
+        subprocess.run(f"diff -u regression/test{idx}/rtl.dump regression/test{idx}/spike.dump | grep -E '^\+' | grep -v '+++' | cut -c 2- >> regression/test{idx}/diff_bug.txt", shell=True, check=True)
+
+        # Transform hex of diff in a literal instruction
+        path_diff_bug = f"regression/test{idx}/diff_bug.txt"
+        path_mnemonic_diff_bug = f"regression/test{idx}/output_instr.txt"
+        transform_hex_in_mnemonics(path_diff_bug, path_mnemonic_diff_bug)
+
+        instruction_counter_in_diff_bug = instruction_counter(path_mnemonic_diff_bug)
         
-        # Get the diff between RTL and Spike
-        subprocess.run(f"diff -u regressions/reg{idx}/rtl.dump regressions/reg{idx}/spike.dump | grep -E '^\+' | grep -v '+++' | cut -c 2- >> regressions/reg{idx}/diff_bug.txt", shell=True, check=True)
+        if len(instruction_counter_in_diff_bug.items()) > 0:
+            print_fail()
+            print(f"# -------------------------------------------------------------------")
+            print(f"# Bug information:\n#")
+            print(f"# Test num. {num_of_tests}")
+            print(f"# {instruction_counter_in_diff_bug}")
+            print(f"# -------------------------------------------------------------------\n\n\n")
+            num_of_mismatch = num_of_mismatch + 1
+        else:
+            print_pass()
+            num_of_match = num_of_match + 1
 
-        # Extract and execute spike-dasm
-        file_path = f"regressions/reg{idx}/rtl.dump"
-        output_file_path = f"regressions/reg{idx}/output_instr.txt"
-        extract_values_and_execute(file_path, output_file_path)
-
-        file_path_bug = f"regressions/reg{idx}/diff_bug.txt"
-        output_file_path_bug = f"regressions/reg{idx}/output_instr_bug.txt"
-        extract_values_and_execute(file_path_bug, output_file_path_bug)
-
-        # Analysis
-        instruction_histogram = create_instruction_histogram(output_file_path)
-        instruction_histogram_bug = create_instruction_histogram(output_file_path)
-
-        print("# --------------------------------------------------------------------")
-        print(f"# Scoreboard / Regression {idx}\n")
-        print(f"# Num of instructions total: {len(instruction_histogram.items())}")
-        print(f"# Num of matches           : {len(instruction_histogram_bug.items())}")
-        print(f"# Num of mismatches        : {len(instruction_histogram.items())-len(instruction_histogram_bug.items())}")
-        print("---------------------------------------------------------------------\n")
-
-        if enable_histogram_plot == 1:
-            plot_instruction_histogram(instruction_histogram, f"Instructions Stimulated in Reg. {idx}")
-            plot_instruction_histogram(instruction_histogram_bug, f"Bugs in Reg. {idx}")
-
-    if enable_histogram_plot == 1:
-        plt.show()
+        num_of_tests = num_of_tests + 1
+    
+    # -----------------------------------------------------
+    # STEP 3: end of the test / scoreboard
+    # -----------------------------------------------------
+    print(f"# -------------------------------------------------------------------")
+    print(f"# Scoreboard\n#")
+    print(f"# Num of tests      : {num_of_tests}")
+    print(f"# Num of matches    : {num_of_match}")
+    print(f"# Num of mismatches : {num_of_mismatch}")
+    print(f"#")
+    print(f"# Bugs instructions :")
+    if num_of_mismatch == 0:
+        print("(none)")
+    else:
+        print_bugs()
+    print(f"# ------------------------------------------------------------------\n\n")
 
 if __name__ == "__main__":
-    regression_count = 3
-    run_sim_and_move_files(regression_count)
-    extract_instr_analysis_and_hist(regression_count)
+    num_of_regressions = 2
+    run(num_of_regressions)
 
