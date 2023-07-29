@@ -20,4 +20,9 @@ The corrected code can be as follows:
   mret
 ```
 
+Or,
+
+![fix](./images/fix.png "fix")
+
+
 With this modification, the code will properly check both the fail and pass conditions preventing the infinite loop and resolving the bug.
