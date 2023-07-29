@@ -21,27 +21,16 @@ To complete this challenge, the following steps were followed:
    ecause02: 9
    ```
 
+Or,
+
+
+![exceptions](./images/ecauses.png "exceptions")
+
 3. The AAPG tool was run.
 
 The reason for using "9" instead of "10" was due to the output log test, as shown below. Using "9" resulted in 10 exceptions, in accordance with the challenge specification.
 
-```
-...
-grep trap_illegal_instruction spike.log > exceptions.log
-cat exceptions.log
-core   0: exception trap_illegal_instruction, epc 0x800000b0
-core   0: exception trap_illegal_instruction, epc 0x80000704
-core   0: exception trap_illegal_instruction, epc 0x80000cb4
-core   0: exception trap_illegal_instruction, epc 0x80000cdc
-core   0: exception trap_illegal_instruction, epc 0x80000db8
-core   0: exception trap_illegal_instruction, epc 0x800013f4
-core   0: exception trap_illegal_instruction, epc 0x8000150c
-core   0: exception trap_illegal_instruction, epc 0x80001524
-core   0: exception trap_illegal_instruction, epc 0x80001548
-core   0: exception trap_illegal_instruction, epc 0x800015f8
-wc -l exceptions.log
-10 exceptions.log
-```
+![exceptions](./images/exceptions-output-terminal.png "exceptions")
 
 ## <!> IMPORTANT NOTE: DO WE HAVE A BUG IN AAPG? <!>
 
