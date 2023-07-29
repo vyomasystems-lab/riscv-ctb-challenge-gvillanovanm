@@ -68,6 +68,10 @@ loop:
   j fail
 ```
 
+Or,
+
+![fix](./images/fix.png "fix")
+
 With this fix, the loop will stop after performing the desired number of test cases.
 
 ### Exercise Validation
