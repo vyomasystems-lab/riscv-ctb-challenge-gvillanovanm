@@ -20,6 +20,10 @@ To resolve this bug, a valid register must be used. RISC-V provides a standard s
 and s7, ra, s4 # line 15852 in test.S (FIXED)
 ```
 
+Or,
+
+![bug1](./images/bug1.png "bug1")
+
 ### Bug 2: Incorrect Operand
 
 #### Cause
@@ -42,5 +46,11 @@ To maintain the pattern of "test.S," it was chosen to update the instruction to 
 ```
 add s5, t1, s0 # line 25581 in "test.S" (FIXED)
 ```
+
+Or,
+
+![bug2](./images/bug2.png "bug2")
+
+### Conclusion
 
 By implementing these fixes, both bugs are resolved, and the assembly code should function correctly as intended.
