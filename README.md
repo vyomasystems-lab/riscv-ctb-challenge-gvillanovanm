@@ -15,7 +15,8 @@ This repository contains multiple challenges, each representing a different leve
 
 ## Challenge Level 3: Capture Bugs in riscv_buggy
 
-- random_test
+- random_test / Final report topics:
+  - ![Steps for the test implementation](./images/c3l1_outline.png)
 - riscv_dv_coverage
 
 
