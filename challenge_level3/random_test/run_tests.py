@@ -40,7 +40,7 @@ def print_bugs():
     with open(output_file_path, 'w') as output_file:
         for root, _, files in os.walk(folder_path):
             for filename in files:
-                if filename == 'output_instr.txt':
+                if filename == 'instr_buggy.txt':
                     file_path = os.path.join(root, filename)
                     with open(file_path, 'r') as input_file:
                         output_file.write(input_file.read())
@@ -125,8 +125,13 @@ def run(regression_count):
 
         # Transform hex of diff in a literal instruction
         path_diff_bug = f"regression/test{idx}/diff_bug.txt"
-        path_mnemonic_diff_bug = f"regression/test{idx}/output_instr.txt"
+        path_mnemonic_diff_bug = f"regression/test{idx}/instr_buggy.txt"
         transform_hex_in_mnemonics(path_diff_bug, path_mnemonic_diff_bug)
+
+        # Transform the rtl or spike hex to analysis before 
+        path_instr_dump = f"regression/test{idx}/rtl.dump"
+        path_mnemonic_instr_dump = f"regression/test{idx}/instr_dump.txt"
+        transform_hex_in_mnemonics(path_instr_dump, path_mnemonic_instr_dump)
 
         instruction_counter_in_diff_bug = instruction_counter(path_mnemonic_diff_bug)
         
@@ -161,6 +166,6 @@ def run(regression_count):
     print(f"# ------------------------------------------------------------------\n\n")
 
 if __name__ == "__main__":
-    num_of_regressions = 2
-    run(num_of_regressions)
+    num_of_tests = 100
+    run(num_of_tests)
 
