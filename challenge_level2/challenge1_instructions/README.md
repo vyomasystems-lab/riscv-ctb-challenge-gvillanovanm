@@ -25,4 +25,6 @@ Ie,
 ![rv32i_diff](./images/rv32i_diff.png "rv32i_diff")
 
 
-By making this modification, the aapg will no longer generate RV64M instructions, ensuring that the assembler doesn't encounter any "unrecognized opcode" errors.
+By making this modification, the aapg will no longer generate RV64M instructions, ensuring that the assembler doesn't encounter any "unrecognized opcode" (as shown below) errors.
+
+![unrec_op](./images/unrec_op.png "unrec_op")
