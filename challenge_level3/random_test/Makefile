@@ -30,8 +30,8 @@ sim: spike
 	@echo '[UpTickPro] Comparison ------'
 	diff rtl.dump spike.dump >> diff_result.txt || true
 
-run_tests:
-	rm -rf regressions/
+run_tests: clean
+	rm -rf regression
 	python3 run_tests.py
 
 clean:
