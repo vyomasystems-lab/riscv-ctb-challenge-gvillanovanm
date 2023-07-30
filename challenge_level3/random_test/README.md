@@ -273,11 +273,13 @@ The same method was made in this configuration and no bugs encountered, even wit
 
 Considering the tested extensions the summary to riscv_buggy was:
 
+```
 rel_sys.csr         # INCONSISTENT
 rel_rv32i.ctrl:     # NO BUGS
 rel_rv32i.compute:  # BUGS: OR / ORI operation
 rel_rv32i.data:     # NO BUGS
 rel_rv32i.fence:    # NO BUGS
+```
 
 ## Coverage
 
