@@ -9,11 +9,11 @@ gen: clean
 
 compile:
 	@echo '[UpTickPro] Test Compilation ------'
-	riscv64-unknown-elf-gcc -march=rv32i_zicsr_zifencei -mabi=ilp32 -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles -I$(PWD)/work/common -T$(PWD)/test.ld test.S $(PWD)/work/common/crt.S -o test.elf
+	riscv32-unknown-elf-gcc -march=rv32i -mabi=ilp32 -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles -I$(PWD)/work/common -T$(PWD)/test.ld test.S $(PWD)/work/common/crt.S -o test.elf
 
 disass: compile
 	@echo '[UpTickPro] Test Disassembly ------'
-	riscv64-unknown-elf-objdump -D test.elf > test.disass
+	riscv32-unknown-elf-objdump -D test.elf > test.disass
 
 spike: compile
 	@echo '[UpTickPro] Spike Run ------'
