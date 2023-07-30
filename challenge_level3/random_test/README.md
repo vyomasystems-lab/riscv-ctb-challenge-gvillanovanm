@@ -74,27 +74,27 @@ rel_rv32i.fence: 0
 
 ```
 # ISA
-rel_sys.csr: 1
+total_instructions: 3
+rel_sys.csr: 1 # focus
 rel_rv32i.ctrl: 0
 rel_rv32i.compute: 0 
-rel_rv32i.data: 1
-rel_rv32i.fence: 1
+rel_rv32i.data: .5
+rel_rv32i.fence: .5
 ```
 
-
-##### TEST_ALL
+##### TEST_CTRL_DATA
 
 ```
 # ISA
-total_instructions: 30
-rel_sys.csr: .1
-rel_rv32i.ctrl: .1
-rel_rv32i.compute: 1  # has bug
-rel_rv32i.data: 1
-rel_rv32i.fence: .1
+total_instructions: 500
+rel_sys.csr: 0 
+rel_rv32i.ctrl: 0.2 # focus
+rel_rv32i.compute: 0 
+rel_rv32i.data: 2
+rel_rv32i.fence: 0
 ```
-
 For this case, the total_instruction was necessary to fit the distribution specification.
+
 
 #### Test Architecture
 
@@ -235,6 +235,53 @@ The percentage of occurrence is presented below.
 
 ![cov_t1](./images/cov_t1.png "cov_t1")
 
+### Test: TEST_CSR_DATA_FENCE
+
+#### Regression 1: no bugs detected
+
+Configuration:
+
+* num_of_tests = 30
+* total_instructions = 3
+
+Result:
+
+No bugs was encountered in this case.
+
+#### Regression 2: bugs non-identified detected
+
+Configuration:
+
+* num_of_tests = 30
+* total_instructions = 10
+
+Result:
+
+![tcdf_reg2](./images/tcdf_reg2.png "tcdf_reg2")
+
+#### Conclusion
+
+The enviroment is inconsistent. No time to investigate the real cause.
+
+### Test: TEST_CSR_DATA_FENCE
+
+The same method was made and no bugs encountered.
+
+# Conclusion / Summary
+
+## Scoreboard
+
+Considering the tested extensions the summary to riscv_buggy was:
+
+rel_sys.csr           # INCONSISTENT
+rel_rv32i.ctrl:       # NO BUGS
+rel_rv32i.compute: 0  # BUGS: OR / ORI operation
+rel_rv32i.data: 1     # NO BUGS
+rel_rv32i.fence: .5   # NO BUGS
+
+## Coverage
+
+Merging all results of regression the coverage specified reaches 100%. However, it doesn't make sense to do here due to the bugs encountered.
 
 # Annex
 
