@@ -1,0 +1,83 @@
+% -------------------------------------------------------
+% Challenge Level 1 - Logical
+% -------------------------------------------------------
+\section{Challenge 1 Level 1 (C1L1): Logical}
+
+For this challenge, two bugs were encountered, referred to as \textbf{1) Undefined Register} and \textbf{2) Incorrect Operand}. Both issues are presented below:
+
+% ---------------------------
+% BUG1
+% ---------------------------
+\subsection{Bug 1: Undefined Register}
+
+\subsubsection{Cause}
+
+The instruction, which is shown in Listing \ref{lst:invalid_reg} on line 15852 in ``test.S," contains a bug. RISC-V provides a standard set of 
+register names, such as \texttt{x0}, \texttt{x1}, ..., \texttt{x31}, which are 32 general-purpose registers. These 
+registers are named: zero, ra, sp, gp, tp, t0, t1, ..., s0, s1, ..., a0, a1, etc., and are valid registers. Since \texttt{z4} does not exist, the compiler returns an error.
+
+\begin{listing}[h]
+\caption{Invalid register instruction.}
+\label{lst:invalid_reg}
+\begin{minted}[frame=single]{nasm}
+and s7, ra, z4 # line 15852 in test.S
+\end{minted}
+\end{listing}
+
+\subsubsection{Solution}
+
+In the test context, any of the valid registers can be used. Randomly, \texttt{z4} was replaced with the valid register \texttt{s4}, as presented in Listing \ref{lst:invalid_reg_fix}. Note that, in a real application, the appropriate valid register should be chosen.
+
+\begin{listing}[h]
+\caption{Fix Listing \ref{lst:invalid_reg} instruction.}
+\label{lst:invalid_reg_fix}
+\begin{minted}[frame=single]{nasm}
+and s7, ra, s4 # line 15852 in test.S
+\end{minted}
+\end{listing}
+
+% ---------------------------
+% BUG2
+% ---------------------------
+\subsection{Bug 2: Incorrect Operand}
+
+\subsubsection{Cause}
+
+The instruction in ``test.S" line 25581 contains an incorrect operand. The ``addi'' RISC-V instruction format is ``addi rd, rs1, const,'' where:
+
+\begin{enumerate}
+    \item \texttt{rd} is the valid destination register;
+    \item \texttt{rs1} is the first operand register;
+    \item \texttt{const} is a value of 12 bits.
+\end{enumerate}
+
+This instruction is shown in Listing \ref{lst:incorrect_op}. Analyzing the instruction, it's possible to verify that the last operand \texttt{s0} is not a constant. As a result, a compiler error occurs.
+
+\begin{listing}[h]
+\caption{Incorrect operand in ``addi'' instruction.}
+\label{lst:incorrect_op}
+\begin{minted}[frame=single]{nasm}
+andi s5,t1,s0 # line 25581 in test.S
+\end{minted}
+\end{listing}
+
+\subsubsection{Solution}
+
+To fix this bug, two solutions are possible:
+
+\begin{enumerate}
+ \item Change \texttt{s0} to a 12-bit constant.
+ \item Change the ``addi" instruction to ``add."
+\end{enumerate}
+
+To maintain the pattern of ``test.S," which is testing only the ``add" instruction, the code was updated with the instruction with solution number 2), as presented in Listing \ref{lst:incorrect_op_fix}. Note that the operands stayed the same, and now it is a valid instruction.
+
+\begin{listing}[h]
+\caption{Fix Listing \ref{lst:incorrect_op} instruction.}
+\label{lst:incorrect_op_fix}
+\begin{minted}[frame=single]{nasm}
+add s5, t1, s0 # line 25581 in test.S
+\end{minted}
+\end{listing}
+
+By implementing these fixes, both bugs were resolved.

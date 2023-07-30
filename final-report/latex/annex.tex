@@ -1,0 +1,51 @@
+
+
+\section{Annex}
+
+\subsection{ISC-V RV32I Base Integer Instructions Card (to be reviewed)}
+
+\begin{table*}[h] % Use table* instead of table to span both columns
+    \centering
+    \begin{tabular*}{\textwidth}{|c|c|c|c|c|c|l|} % Set the width of the tabular* environment to \textwidth
+        \hline
+        Instruction & Type   & Opcode   & funct3 & funct7 & Format & Description\\\hline
+        ADD         & R-Type & 0110011  & 0x0    & 0x00   & rd = rs1 + rs2 & Add                              \\ \hline
+        SUB         & R-Type & 0110011  & 0x0    & 0x20   & rd = rs1 - rs2 & Subtract                         \\ \hline
+        XOR         & R-Type & 0110011  & 0x4    & 0x00   & rd = rs1 \^ rs2 & XOR (Bitwise Exclusive OR)       \\ \hline
+        OR          & R-Type & 0110011  & 0x6    & 0x00   & rd = rs1 $||$ rs2 & OR (Bitwise OR)                  \\ \hline
+        AND         & R-Type & 0110011  & 0x7    & 0x00   & rd = rs1 \& rs2 & AND (Bitwise AND)                \\ \hline
+        SLL         & R-Type & 0110011  & 0x1    & 0x00   & rd = rs1 << rs2 & Shift Left Logical               \\ \hline
+        SRL         & R-Type & 0110011  & 0x5    & 0x00   & rd = rs1 >> rs2 & Shift Right Logical              \\ \hline
+        SRA         & R-Type & 0110011  & 0x5    & 0x20   & rd = rs1 >> rs2 (msb-extended) & Shift Right Arithmetic   \\ \hline
+        SLT         & R-Type & 0110011  & 0x2    & 0x00   & rd = (rs1 < rs2) ? 1 : 0 & Set Less Than              \\ \hline
+        SLTU        & R-Type & 0110011  & 0x3    & 0x00   & rd = (rs1 < rs2) ? 1 : 0 (zero-ext.) & Set Less Than (Unsigned) \\ \hline
+        ADDI        & I-Type & 0010011  & 0x0    & -      & rd = rs1 + imm & Add Immediate                  \\ \hline
+        XORI        & I-Type & 0010011  & 0x4    & -      & rd = rs1 \^ imm & XOR Immediate                  \\ \hline
+        ORI         & I-Type & 0010011  & 0x6    & -      & rd = rs1 $||$ imm & OR Immediate                   \\ \hline
+        ANDI        & I-Type & 0010011  & 0x7    & -      & rd = rs1 \& imm & AND Immediate                  \\ \hline
+        SLLI        & I-Type & 0010011  & 0x1    & 0x00   & rd = rs1 << imm[0:4] & Shift Left Logical Immediate   \\ \hline
+        SRLI        & I-Type & 0010011  & 0x5    & 0x00   & rd = rs1 >> imm[0:4] & Shift Right Logical Immediate  \\ \hline
+        SRAI        & I-Type & 0010011  & 0x5    & 0x20   & rd = rs1 >> imm[0:4] (msb-extended) & Shift Right Arithmetic Immediate \\ \hline
+        SLTI        & I-Type & 0010011  & 0x2    & -      & rd = (rs1 < imm) ? 1 : 0 & Set Less Than Immediate    \\ \hline
+        SLTIU       & I-Type & 0010011  & 0x3    & -      & rd = (rs1 < imm) ? 1 : 0 (zero-ext.) & Set Less Than Immediate (Unsigned) \\ \hline
+        LB          & I-Type & 0000011  & 0x0    & -      & rd = M[rs1 + imm][0:7] & Load Byte                  \\ \hline
+        LH          & I-Type & 0000011  & 0x1    & -      & rd = M[rs1 + imm][0:15] & Load Half                  \\ \hline
+        LW          & I-Type & 0000011  & 0x2    & -      & rd = M[rs1 + imm][0:31] & Load Word                  \\ \hline
+        LBU         & I-Type & 0000011  & 0x4    & -      & rd = M[rs1 + imm][0:7] (zero-ext.) & Load Byte (Unsigned)     \\ \hline
+        LHU         & I-Type & 0000011  & 0x5    & -      & rd = M[rs1 + imm][0:15] (zero-ext.) & Load Half (Unsigned)     \\ \hline
+        SB          & S-Type & 0100011  & 0x0    & -      & M[rs1 + imm][0:7] = rs2[0:7] & Store Byte                     \\ \hline
+        SH          & S-Type & 0100011  & 0x1    & -      & M[rs1 + imm][0:15] = rs2[0:15] & Store Half                   \\ \hline
+        SW          & S-Type & 0100011  & 0x2    & -      & M[rs1 + imm][0:31] = rs2[0:31] & Store Word                   \\ \hline
+        BEQ         & B-Type & 1100011  & 0x0    & -      & if (rs1 == rs2) PC += imm & Branch if Equal                \\ \hline
+        BNE         & B-Type & 1100011  & 0x1    & -      & if (rs1 != rs2) PC += imm & Branch if Not Equal            \\ \hline
+        BLT         & B-Type & 1100011  & 0x4    & -      & if (rs1 < rs2) PC += imm & Branch if Less Than            \\ \hline
+        BGE         & B-Type & 1100011  & 0x5    & -      & if (rs1 >= rs2) PC += imm & Branch if Greater Than or Equal \\ \hline
+        BLTU        & B-Type & 1100011  & 0x6    & -      & if (rs1 < rs2) PC += imm (unsigned) & Branch if Less Than \\ \hline
+        BGEU        & B-Type & 1100011  & 0x7    & -      & if (rs1 >= rs2) PC += imm (unsigned) & Branch if Greater Than or Equal \\ \hline
+        JAL         & J-Type & 1101111  & -      & -      & rd = PC + 4; PC += imm & Jump and Link               \\ \hline
+        JALR        & I-Type & 1100111  & 0x0    & -      & rd = PC + 4; PC = rs1 + imm & Jump and Link Register . . . .  . . . . ....... \\ \hline
+    \end{tabular*}
+    \caption{RISC-V RV32I Base Integer Instructions Card.}
+    \label{tab:rv32i_card}
+\end{table*}
+

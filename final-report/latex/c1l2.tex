@@ -1,0 +1,115 @@
+% -------------------------------------------------------
+% Challenge Level 2 - Loop
+% -------------------------------------------------------
+\section{Challenge 1 Level 2 (C1L2): Loop}
+
+The Challenge 1 Level 2 bug is described below, along with its solution.
+
+% ---------------------------
+% Introduction
+% ---------------------------
+\subsection{Introduction}
+
+The ``test.S" file takes an input constant vector formatted using the ``rule'': the first word will be the value of the first add instruction, the second word will be the value of the second add operand, and the third word is the expected result. The three first lines are presented in Listing \ref{lst:c1l2_words} as an example.
+
+\begin{listing}[h]
+\caption{Test vector.}
+\label{lst:c1l2_words}
+\begin{minted}[frame=single]{nasm}
+test_cases:
+    .word 0x20 # input 1
+    .word 0x20 # input 2
+    .word 0x40 # sum = 0x20+0x20
+    ...
+    ...
+\end{minted}
+\end{listing}
+
+The ``test.S" was designed as follows:
+
+\begin{enumerate}
+\item Load the first three word values into registers;
+\item Perform the ``add'' operation;
+\item Check the performed value against the expected value.
+\end{enumerate}
+
+Therefore, the number of tests will be the number of constant vectors, which shall be always a multiple of 3x, divided by 3. In this case, there are 9 memory allocations, resulting in 3 test cases. The number of tests is loaded into the t5 register by the instruction presented in Listing \ref{lst:c2l2_save_num_of_tests}.
+
+\begin{listing}[h]
+\caption{Instruction to save the num. of tests into t5.}
+\label{lst:c2l2_save_num_of_tests}
+\begin{minted}[frame=single]{nasm}
+li t5, 3
+\end{minted}
+\end{listing}
+
+% ---------------------------
+% Cause
+% ---------------------------
+\subsection{Cause}
+
+The main routine presented in Listing \ref{lst:c1l2_loop} is explained as follows. The first set of instructions will load the two inputs and the expected result into t1, t2, and t3, respectively. After that, the register t4 receives the sum of t1 and t2. Next, the pointer t0, which points to the allocated test cases, is incremented by 12 to get the next test case. Finally, the ``beq" instruction checks if the expected value saved in t3 is equal to the calculated value in t4. If they are equal, the loop restarts to get the next test case. Otherwise, a jump to the ``fail" routine is executed.
+
+\begin{listing}[h]
+\caption{Main routine of C1L2 which has a loop.}
+\label{lst:c1l2_loop}
+\begin{minted}[frame=single]{nasm}
+loop:
+lw t1, (t0)
+lw t2, 4(t0)
+lw t3, 8(t0)
+add t4, t1, t2
+addi t0, t0, 12
+
+# check if the sum is correct
+beq t3, t4, loop
+j fail
+\end{minted}
+\end{listing}
+
+The loop occurs due to this code does not have a stop condition. After the 3 tests, which do not have a fail condition, the pointer t0 continues to fetch, but it should be finalized by a ``pass routine''. Additionally, it was observed that after simulation cycles the Spike simulator returns the error 669. It occurs due to the undefined memory read of t0, i.e., it is not an infinite loop, but it is undesirable behavior.
+
+\begin{listing}[h]
+\begin{minted}[frame=single]{nasm}
+*** FAILED *** (tohost = 669)
+\end{minted}
+\end{listing}
+
+% ---------------------------
+% Solution
+% ---------------------------
+\subsection{Solution}
+
+To fix this bug, it's necessary to implement a stop condition in the loop. One way to achieve this is by decrementing the t5 register, which holds the number of test cases, in each cycle. Additionally, it's needed to add a condition to check if t5 is zero. If t5 is zero, then the code should jump to the "test\_end" - an existing function in the assembly code. Otherwise, the loop continues until the simulation fails (tohost = 669).
+
+The solution proposed is presented in Listing \ref{lst:c1l2_loop_fix}. This code performs the desired number of test cases and checks if the test passes or fails.
+
+\begin{listing}[h]
+\caption{Fix Listing \ref{lst:c1l2_loop}.}
+\label{lst:c1l2_loop_fix}
+\begin{minted}[frame=single]{nasm}
+loop:
+beqz t5, test_end # new instruction
+lw t1, (t0)
+lw t2, 4(t0)
+lw t3, 8(t0)
+add t4, t1, t2
+addi t0, t0, 12
+addi t5, t5, -1 # new instruction
+beq t3, t4, loop # check correct sum
+j fail
+\end{minted}
+\end{listing}
+
+% ---------------------------
+% Exercise Validation
+% ---------------------------
+\subsection{Exercise Validation}
+
+To validate the exercise, it's possible to modify the expected value in the last word of test\_cases. For example, updating the 0xcaff to 0xcafe. The output should be incorrect, and the Spike should return the error code (2) as presented as follows. Using the original test\_cases vector nothing is returned by Spike indicating that the test was well succeeded.
+
+\begin{listing}[h]
+\begin{minted}[frame=single]{nasm}
+*** FAILED *** (tohost = 2)
+\end{minted}
+\end{listing}

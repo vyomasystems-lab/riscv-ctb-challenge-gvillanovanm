@@ -1,0 +1,57 @@
+% -------------------------------------------------------
+% CTB FINAL REPORT
+% 
+% Author: Gabriel Villanova N. M.
+% -------------------------------------------------------
+\documentclass[letterpaper, 10pt, conference]{ieeeconf}
+
+% IEEE config
+\IEEEoverridecommandlockouts
+\overrideIEEEmargins
+\usepackage[hidelinks]{hyperref} 
+\usepackage{listings}
+\usepackage{caption}
+\usepackage[newfloat]{minted}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{fullpage} 
+
+\captionsetup[listing]{position=top}
+
+% Title
+\title{\LARGE \bf Capture The Bug 2023: RISC-V Verification Challenges}
+
+% Author
+\author{Gabriel Villanova Novaes Magalhães$^{1}$}
+
+\begin{document}
+
+% Title and Author
+\maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
+
+% Sections
+\input{c1l1.tex} 
+\input{c1l2.tex}
+\input{c1l3.tex}
+\input{c2l1.tex}
+\input{c2l2.tex}
+\input{c3l1.tex} % riscv_buggy
+\input{c3l2.tex} % riscv_dv
+
+% Annex
+% DO NOT REMOVE THIS COMMAND
+\addtolength{\textheight}{-12cm}
+
+\begin{thebibliography}{99}
+
+\bibitem{riscv_isa_vol1}
+Andrew Waterman, Krste Asanovi\'c. (2019, December 13). \textit{The RISC-V Instruction Set Manual, Volume I: Unprivileged ISA}. SiFive Inc., CS Division, EECS Department, University of California, Berkeley. Retrieved from \url{https://inst.eecs.berkeley.edu/~cs61c/fa17/img/riscvcard.pdf}
+
+
+\end{thebibliography}
+
+\input{annex.tex}
+
+\end{document}

@@ -1,0 +1,53 @@
+% -------------------------------------------------------
+% Bug: Infinite Loop Caused by Illegal Instruction Exception
+% -------------------------------------------------------
+\section{Challenge 1 Level 3 (C1L3): Infinite Loop Caused by Illegal Instruction Exception}
+
+This challenge, which consists of an infinite loop caused by an exception, is described below as well as its solution.
+
+\subsection{Cause}
+
+In the given code (Listing \ref{lst:c1l3}), an exception is intentionally created by executing an illegal instruction (code = 2). The trap is treated in the \texttt{mtvec\_handler} function; it's presented in Listing \ref{lst:c1l3_handle}. The issue arises from only checking the fail condition (\texttt{bne t0, t1, fail}) but never checking the pass condition. The effect of this is that the instruction \texttt{mret} will return the program counter (PC) to the last instruction, which is illegal, resulting in an infinite loop.
+
+\begin{listing}[h]
+\caption{Snippet to cause an illegal instruction exception.}
+\label{lst:c1l3}
+\begin{minted}[frame=single]{nasm}
+illegal_instruction:
+  .word 0              
+  j fail
+\end{minted}
+\end{listing}
+
+\begin{listing}[h]
+\caption{Handle to illegal instruction exception.}
+\label{lst:c1l3_handle}
+\begin{minted}[frame=single]{nasm}
+mtvec_handler:
+  li t1, CAUSE_ILLEGAL_INSTRUCTION
+  csrr t0, mcause
+  bne t0, t1, fail
+  csrr t0, mepc
+
+  mret
+\end{minted}
+\end{listing}
+
+\subsection{Solution}
+
+To fix the bug and avoid the infinite loop, it is necessary to add the instruction \texttt{beq t0, t1, pass} before or after the \texttt{bne t0, t1, fail} instruction. This will ensure that if the pass condition is met, the program proceeds to the \texttt{pass} label, thus preventing the infinite loop. The corrected code is presented in Listing \ref{lst:c1l3_fix}
+
+\begin{listing}[h]
+\caption{Fix Listing \ref{lst:c1l3}.}
+\label{lst:c1l3_fix}
+\begin{minted}[frame=single]{nasm}
+  li t1, CAUSE_ILLEGAL_INSTRUCTION
+  csrr t0, mcause
+  bne t0, t1, fail
+  beq t0, t1, pass # new inst. added
+  csrr t0, mepc
+  mret
+\end{minted}
+\end{listing}
+
+With this modification, the code will properly check both the fail and pass conditions, preventing the infinite loop and resolving the bug.
