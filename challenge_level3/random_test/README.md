@@ -1,37 +1,39 @@
+Below is the corrected version of the README.md with improved English grammar:
+
 # Challenge: Random Test - Given Design (riscv_buggy)
 
 ## Challenge Specification
 
-Use the AAPG and create an infrastrucure that exposes the bug.
+Use the AAPG to create an infrastructure that exposes the bug.
 
-## Methodology
+## Methodology Overview
 
-The method chosen to verify the Design Under Test (DUT) was the Fuctional Verification (FV). The use of FV is justified due to the insfracture already done, for instance, the AAPG generation, and the comparision method based on diff command between the DUT and the Reference/Golden Model (refmod, or spike). Another strategies, such as UVM or Formal Verification, can be used, but it depends on more software and RTL access. 
+The chosen method to verify the Design Under Test (DUT) was Functional Verification (FV). The use of FV is justified due to the infrastructure already in place, such as the AAPG generation, and the comparison method based on the diff command between the DUT and the Reference/Golden Model (refmod or spike). Other strategies, such as UVM or Formal Verification, can be used, but they require more software and RTL access.
 
-The basic steps of a **basic** Functional Verification flow is:
+The basic steps of a **basic** Functional Verification flow are:
 
-1. Study Design;
-2. Define a Verification Plan (VP); 
-3. Implement the test;
-4. Measure, refine and validate (Results);
+1. Study Design.
+2. Define a Verification Plan (VP).
+3. Implement the test.
+4. Measure, refine, and validate the results.
 
-The process must be repeated if the VP's goals was not reached, otherwise the verification is done.
+The process must be repeated if the VP's goals are not reached; otherwise, the verification is considered done. The process is described in detail in the following sections.
 
-### Step 1: Study Design: riscv_buggy
+### Step 1: Study Design - riscv_buggy
 
-The riscv_buggy is a black-box RISC-V with support to RV32I and CSR instructions (this information was shared in slack). These instructions are presented in the Annex Section.
+riscv_buggy is a black-box RISC-V with support for RV32I and CSR instructions (this information was shared in slack). These instructions are presented in the Annex Section.
 
 ### Step 2: Verification Plan (VP)
 
-In a basic Functional Verification process, a VP is a document to define the coverage specification, the tests that must be implemented, and the test archictecture. Based on the information about the DUT, Reference Model and the AAPG tool, which auxiliate in the tests creation, the coverage can be based in the instructions expected, the tests will be based on the AAPG possibilities, and the traditional verification archicteture can be adapted with the used tools. These topic are discussed as following.
+In a basic Functional Verification process, a VP is a document that defines the coverage specification, the tests that must be implemented, and the test architecture. Based on the information about the DUT, Reference Model, and the AAPG tool, which aids in the tests creation, the coverage can be based on the expected instructions, and the tests will be based on the AAPG possibilities. The traditional verification architecture can be adapted with the used tools. These topics are discussed as follows.
 
 #### Coverage Specification
 
-All instructions of the DUT (riscv_buggy), which is the RV32I set, and the CSR instructions, must be verified. These instructions are presented in the Annex.
+All instructions of the DUT (riscv_buggy), which is the RV32I set, and the CSR instructions must be verified. These instructions are presented in the Annex.
 
 #### Test Specification
 
-Controlling the kind of input to stimulate the DUT can help to understand the bug's cause. The AAPG allows different kind of configuration, however, the focus will be in the below .yaml fields, and the other fields will be default with no exceptions being created. Each field below represents a distribuition weight, zero means never be generated, if it's not zero it will be generated according to the weigth. 
+Controlling the kind of input to stimulate the DUT can help understand the cause of bugs. The AAPG allows different kinds of configuration; however, the focus will be on the below .yaml fields, and the other fields will be set to default with no exceptions being created. Each field below represents a distribution weight; zero means it will never be generated, if it's not zero, it will be generated according to the weight.
 
 ```
 # ISA
@@ -42,71 +44,86 @@ rel_rv32i.data: <config>
 rel_rv32i.fence: <config>
 ```
 
-IMPORTANT NOTE: The total_of_instruction field will be kept equal to one or two in case of bug capture. The reason to do it is to avoid fake bugs. For instance, imagine that an buggy instruction was executed and the register was saved in x7. After that, every operation with x7 can be potencially a fake bug. Therefore, keeping the total_of_instructions very small and incrasing the number of tests a real bug can be find. Also, for each test the seed is new, and it increases the change to get a real bug.
+IMPORTANT NOTE: The total_of_instruction field will be kept equal to one or two in case of bug capture. The reason for doing this is to avoid fake bugs. For instance, imagine that a buggy instruction was executed, and the result was saved in x7. After that, every operation with x7 can potentially be a fake bug. Therefore, keeping the total_of_instructions very small and increasing the number of tests can help find real bugs. Also, for each test, the seed is new, which increases the chance to get a real bug.
 
-The tests planned are presented as follow.
+The planned tests are presented as follows.
 
-##### TEST_ONLY_DATA	
+##### TEST_ONLY_DATA
 
 ```
 # ISA
-rel_sys.csr:	0
-rel_rv32i.ctrl:	0
-rel_rv32i.compute:	0
-rel_rv32i.data:	1
-rel_rv32i.fence:	0
+rel_sys.csr: 0
+rel_rv32i.ctrl: 0
+rel_rv32i.compute: 0
+rel_rv32i.data: 1
+rel_rv32i.fence: 0
 ```
 
 ##### TEST_ONLY_COMPUTE
 
 ```
 # ISA
-rel_sys.csr:	0
-rel_rv32i.ctrl:	0
-rel_rv32i.compute:	1
-rel_rv32i.data:	0
-rel_rv32i.fence:	0
+rel_sys.csr: 0
+rel_rv32i.ctrl: 0
+rel_rv32i.compute: 1
+rel_rv32i.data: 0
+rel_rv32i.fence: 0
 ```
+
+##### TEST_CSR_DATA_FENCE
+
+```
+# ISA
+rel_sys.csr: 1
+rel_rv32i.ctrl: 0
+rel_rv32i.compute: 0 
+rel_rv32i.data: 1
+rel_rv32i.fence: 1
+```
+
 
 ##### TEST_ALL
 
 ```
 # ISA
-rel_sys.csr:	1
-rel_rv32i.ctrl:	1
-rel_rv32i.compute:	1
-rel_rv32i.data:	1
-rel_rv32i.fence:	1
+total_instructions: 30
+rel_sys.csr: .1
+rel_rv32i.ctrl: .1
+rel_rv32i.compute: 1  # has bug
+rel_rv32i.data: 1
+rel_rv32i.fence: .1
 ```
+
+For this case, the total_instruction was necessary to fit the distribution specification.
 
 #### Test Architecture
 
-The architecture is based on traditional verification architecture, which is shown in Figure below, is 1) stimulus generation (sequences) that is represented as ".bin", 2) driver the DUT and the Golden Model, 3) compare outputs, and 4) extract the results (scoreboard).
+The architecture is based on the traditional verification architecture, which is shown in the Figure below: 1) stimulus generation (sequences) represented as ".bin", 2) driver for the DUT and the Golden Model, 3) compare outputs, and 4) extract the results (scoreboard).
 
 ![arch](./images/arch.png "arch")
 
 
 ### Step 3: Implement the test
 
-The test infrastructure was implemented in Python (file: run_tests.py) in 3 steps as show in Figure below.
+The test infrastructure was implemented in Python (file: run_tests.py) in 3 steps, as shown in the Figure below.
  
 ![implement](./images/implement.png "implement")
  
-The routines are based on 3 steps. The Step 1 calls the Makefile (# make), and it makes the generation (AAPG), the cross-compilation of the test.S generated by AAPG using the RISCV Toolchain, the stimulutation (spike and verilator dut), and returns the diff output between the models of the current test; the Step 2 reads the diff file generated, verifies if it is empty or not, if it's empty than the match variable is incremented and a PASS message is printed, if not then the mismatch variable is incremented and information about the bug is presented (see Figure below). Finally, the Step 3 just print the scoreboard as presented in Figure below.
+The routines are based on 3 steps. Step 1 calls the Makefile (# make), which generates the AAPG, cross-compiles the test.S generated by AAPG using the RISCV Toolchain, stimulates (spike and verilator DUT), and returns the diff output between the models of the current test. Step 2 reads the generated diff file, verifies if it is empty or not, and if it's empty, the match variable is incremented, and a PASS message is printed; if not, then the mismatch variable is incremented, and information about the bug is presented (see the Figure below). Finally, Step 3 just prints the scoreboard as presented in the Figure below.
 
 ![fail](./images/fail.png "fail")
 
 ![scb](./images/scb.png "scb")
 
-Before execute this script, the configuration of the test - TEST_ONLY_DATA, TEST_ONLY_COMPUTE, etc -, and the number of tests, which can be made setting the variable "num_of_tests" inside the run_tests.py, must be set. After that, the script can be run (# python3 run_tests.py).
+Before executing this script, the test configuration - TEST_ONLY_DATA, TEST_ONLY_COMPUTE, etc - and the number of tests, which can be set by adjusting the variable "num_of_tests" inside the run_tests.py, must be set. After that, the script can be run (# python3 run_tests.py).
 
-Another script was implemented to generate histogram and coverage analysis (run_analysis_reg.py). After execution of regressions (see Figure below), this script read the artefacts generated, calculate how much instructions was executed, the percentage of execution, plot the histogram, and calculated the percentage of instructions which was exercited compared to all instructions expected (Annex). It is demonstrated in next Section.
+Another script was implemented to generate histograms and coverage analysis (run_analysis_reg.py). After executing regressions (see the Figure below), this script reads the generated artifacts, calculates how many instructions were executed, the percentage of execution, plots the histogram, and calculates the percentage of instructions that were exercised compared to all expected instructions (Annex). It is demonstrated in the next Section.
 
 ![regressions_sample](./images/regressions_sample.png "regressions_sample")
 
-## Results (Measure, refine and validate)
+## Results (Measure, refine, and validate)
 
-The results from the application of the Methodology defined will be presented in this Section, as well as the bugs found. 
+The results from the application of the Methodology defined will be presented in this Section, as well as the bugs found.
 
 ### Test: TEST_ONLY_DATA
 
@@ -120,7 +137,6 @@ Configuration:
 Result:
 
 ![tod_10_r](./images/tod_10_r.png "tod_10_r")
-
 
 Histogram of instructions stimulated:
 
@@ -136,8 +152,9 @@ Configuration:
 
 Result:
 
-![tod_100_r](./images/tod_100_r.png "tod_100_r")
+![tod_
 
+100_r](./images/tod_100_r.png "tod_100_r")
 
 Histogram of instructions stimulated:
 
@@ -145,9 +162,9 @@ Histogram of instructions stimulated:
 
 ### Discussion and Coverage Status
 
-Two regression was executed. The first with 10 tests and 2 instructions not bugs were encountered. The second one, even increasing the parameters num_of_tests to 100 and total_instructions to 20, which create a rich input vector for this configuration, no bugs were encountered too. It means that the bug is not in RV32I.data (see the histogram) has bugs.
+Two regressions were executed. The first one with 10 tests and 2 instructions; no bugs were encountered. The second one, even with increased parameters num_of_tests to 100 and total_instructions to 20, which create a rich input vector for this configuration, no bugs were encountered either. It means that the bug is not in RV32I.data (see the histogram) but has bugs.
 
-The coverage was calculated for this case. Since it is a subset of the all instructions, it didn't reach 100% as expected.
+The coverage was calculated for this case. Since it is a subset of all instructions, it didn't reach 100% as expected.
 
 ![cov_t0](./images/cov_t0.png "cov_t0")
 
@@ -155,7 +172,6 @@ The coverage was calculated for this case. Since it is a subset of the all instr
 Instructions Tested: 24/47
 Percentage of Instructions Tested: 51.06%
 ```
-
 
 ### Test: TEST_ONLY_COMPUTE
 
@@ -190,16 +206,15 @@ Histogram of instructions stimulated:
 
 ![toc_100](./images/toc_100.png "toc_100")
 
-
 ### Discussion and Coverage Status
 
 #### Analysis of Bug and "Fake" Bugs
 
-The test captured a bug in OR and ORI instruction. To understand the cause of the bug let's consider the scenario  presented below.
+The test captured a bug in OR and ORI instructions. To understand the cause of the bug, let's consider the scenario presented below.
 
 ![ori_bug_anal2](./images/ori_bug_anal2.png "ori_bug_anal2")
 
-The instruction here highlithed below. Analyzing the literal operation (Figure below), it's possible to understand the real cause of the bug. When A and B are equal to 1, the output bit expected is inverted. The OR instruction also has bug and the same analysis can be done to verify the cause in details.
+The highlighted instruction below. Analyzing the literal operation (Figure below), it's possible to understand the real cause of the bug. When A and B are equal to 1, the output bit expected is inverted. The OR instruction also has a bug, and the same analysis can be done to verify the cause in detail.
 
 ```
 ori s11, t2, 1276 
@@ -207,17 +222,16 @@ ori s11, t2, 1276
 
 ![ori_bug_anal](./images/ori_bug_anal.png "ori_bug_anal")
 
-If we increase the number of instructions the test will return a lot of bugs. However, without a accurate analysis it's hard to identify if it is a real bug of a bug generated due to right value assigned to registers after OR or ORI operation, "fake bug". As a result, it's safer and easier, in terms of bug capturation, keep the number of instructions equal to one or two and increase the number of tests.
+If we increase the number of instructions, the test will return many bugs. However, without an accurate analysis, it's hard to identify if it is a real bug or a bug generated due to the right value assigned to registers after the OR or ORI operation, "fake bug." As a result, it's safer and easier, in terms of bug capture, to keep the number of instructions equal to one or two and increase the number of tests.
 
 #### Coverage
 
-The coverage was calculated in regression 2, and the result is shown below. The incresing in relation to the last coverage is due to the set of instructions configured. The compute set (add, xor, xori, etc) is greater than the compute data set. As a result, the coverage reached 70.21%. 
-
+The coverage was calculated in regression 2, and the result is shown below. The increase in relation to the last coverage is due to the set of instructions configured. The compute set (add, xor, xori, etc.) is greater than the compute data set. As a result, the coverage reached 70.21%.
 
 Instructions Tested: 33/47
 Percentage of Instructions Tested: 70.21%
 
-The percentage of ocurrency is presented below.
+The percentage of occurrence is presented below.
 
 ![cov_t1](./images/cov_t1.png "cov_t1")
 
