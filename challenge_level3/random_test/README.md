@@ -59,13 +59,25 @@ rel_rv32i.fence:	0
 
 ##### TEST_ONLY_COMPUTE
 
+```
+# ISA
 rel_sys.csr:	0
 rel_rv32i.ctrl:	0
 rel_rv32i.compute:	1
 rel_rv32i.data:	0
 rel_rv32i.fence:	0
+```
 
-##### TEST_ONLY_???
+##### TEST_ALL
+
+```
+# ISA
+rel_sys.csr:	1
+rel_rv32i.ctrl:	1
+rel_rv32i.compute:	1
+rel_rv32i.data:	1
+rel_rv32i.fence:	1
+```
 
 #### Test Architecture
 
@@ -88,7 +100,9 @@ The routines are based on 3 steps. The Step 1 calls the Makefile (# make), and i
 
 Before execute this script, the configuration of the test - TEST_ONLY_DATA, TEST_ONLY_COMPUTE, etc -, and the number of tests, which can be made setting the variable "num_of_tests" inside the run_tests.py, must be set. After that, the script can be run (# python3 run_tests.py).
 
-Another script was implemented to generate histogram and coverage analysis. After execution of regressions (see Figure below), this script read the artefacts to generate the results. It is demonstrated in next Section.
+Another script was implemented to generate histogram and coverage analysis (run_analysis_reg.py). After execution of regressions (see Figure below), this script read the artefacts generated, calculate how much instructions was executed, the percentage of execution, plot the histogram, and calculated the percentage of instructions which was exercited compared to all instructions expected (Annex). It is demonstrated in next Section.
+
+![regressions_sample](./images/regressions_sample.png "regressions_sample")
 
 ## Results (Measure, refine and validate)
 
@@ -113,10 +127,6 @@ Histogram of instructions stimulated:
 ![tod_10](./images/tod_10.png "tod_10")
 
 
-##### Discussion
-
-No bugs encountered.
-
 #### Regression 2
 
 Configuration:
@@ -133,11 +143,11 @@ Histogram of instructions stimulated:
 
 ![tod_100](./images/tod_100.png "tod_100")
 
-##### Discussion
+### Discussion and Coverage Status
 
-No bugs encountered.
+Two regression was executed. The first with 10 tests and 2 instructions not bugs were encountered. The second one, even increasing the parameters num_of_tests to 100 and total_instructions to 20, which create a rich input vector for this configuration, no bugs were encountered too. It means that the bug is not in RV32I.data (see the histogram) has bugs.
 
-### Coverage Status
+The coverage was calculated for this case. Since it is a subset of the all instructions, it didn't reach 100% as expected.
 
 ![cov_t0](./images/cov_t0.png "cov_t0")
 
@@ -146,9 +156,70 @@ Instructions Tested: 24/47
 Percentage of Instructions Tested: 51.06%
 ```
 
-### Conclusion
 
-Even increasing the parameters num_of_tests to 100 and total_instructions to 20, which create a rich input vector for this configuration, no bugs were encountered.
+### Test: TEST_ONLY_COMPUTE
+
+#### Regression 1
+
+Configuration:
+
+* num_of_tests = 10
+* total_instructions = 2
+
+Result:
+
+![toc_10_r](./images/toc_10_r.png "toc_10_r")
+
+Histogram of instructions stimulated:
+
+![toc_10](./images/toc_10.png "toc_10")
+
+
+#### Regression 2
+
+Configuration:
+
+* num_of_tests = 100
+* total_instructions = 2
+
+Result:
+
+![toc_100_r](./images/toc_100_r.png "toc_100_r")
+
+Histogram of instructions stimulated:
+
+![toc_100](./images/toc_100.png "toc_100")
+
+
+### Discussion and Coverage Status
+
+#### Analysis of Bug and "Fake" Bugs
+
+The test captured a bug in OR and ORI instruction. To understand the cause of the bug let's consider the scenario  presented below.
+
+![ori_bug_anal2](./images/ori_bug_anal2.png "ori_bug_anal2")
+
+The instruction here highlithed below. Analyzing the literal operation (Figure below), it's possible to understand the real cause of the bug. When A and B are equal to 1, the output bit expected is inverted. The OR instruction also has bug and the same analysis can be done to verify the cause in details.
+
+```
+ori s11, t2, 1276 
+```
+
+![ori_bug_anal](./images/ori_bug_anal.png "ori_bug_anal")
+
+If we increase the number of instructions the test will return a lot of bugs. However, without a accurate analysis it's hard to identify if it is a real bug of a bug generated due to right value assigned to registers after OR or ORI operation, "fake bug". As a result, it's safer and easier, in terms of bug capturation, keep the number of instructions equal to one or two and increase the number of tests.
+
+#### Coverage
+
+The coverage was calculated in regression 2, and the result is shown below. The incresing in relation to the last coverage is due to the set of instructions configured. The compute set (add, xor, xori, etc) is greater than the compute data set. As a result, the coverage reached 70.21%. 
+
+
+Instructions Tested: 33/47
+Percentage of Instructions Tested: 70.21%
+
+The percentage of ocurrency is presented below.
+
+![cov_t1](./images/cov_t1.png "cov_t1")
 
 
 # Annex

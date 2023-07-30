@@ -32,7 +32,7 @@ def plot_histogram(data):
     plt.hist(data, bins=20, edgecolor='black')
     plt.xlabel('Value')
     plt.ylabel('Frequency')
-    plt.title('Histogram of Instructions: TEST_ONLY_DATA')
+    plt.title('Histogram of Instructions: TEST_ONLY_COMPUTE')
     plt.show()
 
 def main():
