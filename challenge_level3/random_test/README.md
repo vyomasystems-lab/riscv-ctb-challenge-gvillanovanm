@@ -1,42 +1,47 @@
-Below is the corrected version of the README.md with improved English grammar:
+# Challenge 3 Level 1 (C3L1): Capture The Bug - Given Design (`riscv_buggy`)
 
-# Challenge: Random Test - Given Design (riscv_buggy)
+This repository contains the verification infrastructure and results for the C3L1 challenge - Capture The Bug, which aims to expose bugs in the given design `riscv_buggy`.
 
-## Challenge Specification
+## Methodology
 
-Use the AAPG to create an infrastructure that exposes the bug.
+For verifying the Design Under Test (DUT), the Functional Verification (FV) methodology was chosen. This decision was based on the existing infrastructure, including the AAPG generation and the comparison method using the "diff" command between the DUT and the Reference/Golden Model (refmod or spike). Other strategies like UVM or Formal Verification could also be used, but they would require more software and RTL (Register Transfer Level) access.
 
-## Methodology Overview
+The fundamental steps of the Functional Verification flow are as follows:
+1. Study Design
+2. Define a Verification Plan (VP)
+3. Implement the test
+4. Measure, refine, and validate (Results)
 
-The chosen method to verify the Design Under Test (DUT) was Functional Verification (FV). The use of FV is justified due to the infrastructure already in place, such as the AAPG generation, and the comparison method based on the diff command between the DUT and the Reference/Golden Model (refmod or spike). Other strategies, such as UVM or Formal Verification, can be used, but they require more software and RTL access.
+The process should be repeated if the VP's goals were not reached, otherwise the verification is considered complete. This process is applied to the given design and described in detail in the next subsections.
 
-The basic steps of a **basic** Functional Verification flow are:
+## STEP1 - Study Design
 
-1. Study Design.
-2. Define a Verification Plan (VP).
-3. Implement the test.
-4. Measure, refine, and validate the results.
+The `riscv_buggy` is a black-box RISC-V processor that supports RV32I (RISC-V 32-bit base integer instructions) and CSR (Control and Status Register) instructions.
 
-The process must be repeated if the VP's goals are not reached; otherwise, the verification is considered done. The process is described in detail in the following sections.
+Considering this level of knowledge about the system, a verification environment is implemented to test every instruction specified (RV32I and CSR instructions). The instruction set details are presented in the Annex section \cite{riscv_isa_vol1}. In a real scenario, much more should be considered.
 
-### Step 1: Study Design - riscv_buggy
+The next step is to define a Verification Plan.
 
-riscv_buggy is a black-box RISC-V with support for RV32I and CSR instructions (this information was shared in slack). These instructions are presented in the Annex Section.
+## STEP2 - Verification Plan (VP)
 
-### Step 2: Verification Plan (VP)
+In general, the Verification Plan (VP) is a document that defines the coverage specification, the tests that need to be implemented, and the test architecture.
 
-In a basic Functional Verification process, a VP is a document that defines the coverage specification, the tests that must be implemented, and the test architecture. Based on the information about the DUT, Reference Model, and the AAPG tool, which aids in the tests creation, the coverage can be based on the expected instructions, and the tests will be based on the AAPG possibilities. The traditional verification architecture can be adapted with the used tools. These topics are discussed as follows.
+Based on the information about the DUT, Reference Model (spike), and the AAPG tool, which assists in test creation, the coverage can be based on the expected instructions, and the tests can be designed to leverage the AAPG possibilities. In addition, the traditional verification architecture can be adapted with the available tools. These topics are presented further in the following subsections.
 
-#### Coverage Specification
+### Coverage Specification
 
-All instructions of the DUT (riscv_buggy), which is the RV32I set, and the CSR instructions must be verified. These instructions are presented in the Annex.
+The verification environment must measure the stimulated instructions and check if all instructions - RV32I and CSR - were covered. It's a stop criterion.
 
-#### Test Specification
+### Test Specification
 
-Controlling the kind of input to stimulate the DUT can help understand the cause of bugs. The AAPG allows different kinds of configuration; however, the focus will be on the below .yaml fields, and the other fields will be set to default with no exceptions being created. Each field below represents a distribution weight; zero means it will never be generated, if it's not zero, it will be generated according to the weight.
+In this context, the test specification was divided into 1) sequence generation and 2) test infrastructure (stimulus, comparison, and traceability).
+
+#### Sequences Generation
+
+The sequences should be created using the AAPG tool. The AAPG allows configuring the group of instructions, which is better to understand the bugs. It can be done by configuring the fields in the YAML file. These fields are presented below:
 
 ```
-# ISA
+total_instruction: <config>
 rel_sys.csr: <config>
 rel_rv32i.ctrl: <config>
 rel_rv32i.compute: <config>
@@ -44,14 +49,32 @@ rel_rv32i.data: <config>
 rel_rv32i.fence: <config>
 ```
 
-IMPORTANT NOTE: The total_of_instruction field will be kept equal to one or two in case of bug capture. The reason for doing this is to avoid fake bugs. For instance, imagine that a buggy instruction was executed, and the result was saved in x7. After that, every operation with x7 can potentially be a fake bug. Therefore, keeping the total_of_instructions very small and increasing the number of tests can help find real bugs. Also, for each test, the seed is new, which increases the chance to get a real bug.
+The RV32I instructions can be considered as compute, data, fence, and ctrl. The csr is the Control and Status Register. The field <config> is a value or a weight that the AAPG uses to create the sequences randomly.
 
-The planned tests are presented as follows.
+An important note is that the "total_of_instructions" field in the first regressions should be kept equal to one or two. This is done to avoid false positives. For example, if a buggy instruction was executed, and its result was saved in register x7, any operation involving x7 could potentially be a false bug. Therefore, by keeping the "total_of_instructions" small and increasing the number of tests, we improve the chances of capturing a real bug. Additionally, each test uses a new seed, which further increases the likelihood of finding a real bug. The planned tests are presented in the next paragraphs.
 
-##### TEST_ONLY_DATA
+#### Test Architecture
 
-```
-# ISA
+The test architecture is based on the traditional verification architecture, as shown in the figure below. It includes the following steps:
+1. Stimulus generation represented as ".bin"
+2. Driving the DUT and the Golden Model
+3. Comparing the outputs
+4. Extracting the results (scoreboard)
+
+![Traditional verification architecture adapted to the RISC-V verification environment](./images/arch.png)
+
+## STEP1 - Test Implementation
+
+The sequences planned, and the details about the verification environment implementation are presented in this section.
+
+### Sequences
+
+The sequences were planned to separate the group of analysis due to the facilitate association in analysis and debugging.
+
+1. **TEST_ONLY_DATA**
+   - The configuration file is presented below. It will generate only data instructions (lw, sw, li, sh, lh, etc).
+
+```nasm
 rel_sys.csr: 0
 rel_rv32i.ctrl: 0
 rel_rv32i.compute: 0
@@ -59,10 +82,10 @@ rel_rv32i.data: 1
 rel_rv32i.fence: 0
 ```
 
-##### TEST_ONLY_COMPUTE
+2. **TEST_ONLY_COMPUTE**
+   - The configuration file is presented below. It will generate only compute instructions (or, xor, add, addi, sub, etc).
 
-```
-# ISA
+```nasm
 rel_sys.csr: 0
 rel_rv32i.ctrl: 0
 rel_rv32i.compute: 1
@@ -70,11 +93,11 @@ rel_rv32i.data: 0
 rel_rv32i.fence: 0
 ```
 
-##### TEST_CSR_DATA_FENCE
+3. **TEST_CSR_DATA_FENCE**
+   - The configuration file is presented below. It will generate data, fence, and csr instructions. In this case, it's not possible to isolate CSR, then data and fence were set to allow the generation.
 
-```
-# ISA
-total_instructions: 3
+```nasm
+total_instructions: 3 # needed
 rel_sys.csr: 1 # focus
 rel_rv32i.ctrl: 0
 rel_rv32i.compute: 0 
@@ -82,10 +105,10 @@ rel_rv32i.data: .5
 rel_rv32i.fence: .5
 ```
 
-##### TEST_CTRL_DATA
+4. **TEST_CTRL_DATA**
+   - The configuration file is presented below. It will generate Ctrl (control) and data instructions. Also, it's not possible to isolate Ctrl, then data was included in the generation. In addition, the total instruction needs to be increased to fit the distribution specification.
 
-```
-# ISA
+```nasm
 total_instructions: 500
 rel_sys.csr: 0 
 rel_rv32i.ctrl: 0.2 # focus
@@ -93,252 +116,146 @@ rel_rv32i.compute: 0
 rel_rv32i.data: 2
 rel_rv32i.fence: 0
 ```
-For this case, the total_instruction was necessary to fit the distribution specification.
 
+### Test Implementation
 
-#### Test Architecture
+The test infrastructure was implemented in Python (file: `run_tests.py`) in three steps, as shown in the figure below:
 
-The architecture is based on the traditional verification architecture, which is shown in the Figure below: 1) stimulus generation (sequences) represented as ".bin", 2) driver for the DUT and the Golden Model, 3) compare outputs, and 4) extract the results (scoreboard).
+![Steps for the test implementation](./images/implement.png)
 
-![arch](./images/arch.png "arch")
+The routines are based on these three steps. Step 1 calls the Makefile (`make`) and performs the following actions: AAPG generation, cross-compilation of the generated `test.S` using the RISC-V Toolchain, stimulation (spike and verilator dut), and comparison of the models' outputs using the "diff" command. Step 2 reads the generated "diff" file, verifies if it is empty or not, and increments the "match" variable with
 
+ a PASS message if it is empty, or increments the "mismatch" variable and presents information about the bug. Finally, Step 3 prints the scoreboard.
 
-### Step 3: Implement the test
+Before executing this script, the test configuration (`TEST_ONLY_DATA`, `TEST_ONLY_COMPUTE`, etc.) and the number of tests (set by the variable `num_of_tests` inside `run_tests.py`) must be defined. After that, the script can be run (`python3 run_tests.py`). The main infrastructure is based on the last challenges learned.
 
-The test infrastructure was implemented in Python (file: run_tests.py) in 3 steps, as shown in the Figure below.
- 
-![implement](./images/implement.png "implement")
- 
-The routines are based on 3 steps. Step 1 calls the Makefile (# make), which generates the AAPG, cross-compiles the test.S generated by AAPG using the RISCV Toolchain, stimulates (spike and verilator DUT), and returns the diff output between the models of the current test. Step 2 reads the generated diff file, verifies if it is empty or not, and if it's empty, the match variable is incremented, and a PASS message is printed; if not, then the mismatch variable is incremented, and information about the bug is presented (see the Figure below). Finally, Step 3 just prints the scoreboard as presented in the Figure below.
+Another script (`run_analysis_reg.py`) was implemented for generating histograms and conducting coverage analysis. After executing regressions, this script reads the generated artifacts, calculates the number of executed instructions and their percentage, plots the histogram, and calculates the percentage of instructions exercised compared to all expected instructions (Annex). In summary, it implements the coverage analysis by reading the dump files, applying disassembly, and measuring the instructions from that.
 
-![fail](./images/fail.png "fail")
+The results obtained from applying the defined Methodology will be presented in this section, along with the bugs found.
 
-![scb](./images/scb.png "scb")
+## Results
 
-Before executing this script, the test configuration - TEST_ONLY_DATA, TEST_ONLY_COMPUTE, etc - and the number of tests, which can be set by adjusting the variable "num_of_tests" inside the run_tests.py, must be set. After that, the script can be run (# python3 run_tests.py).
+The results of the regressions for each configuration are presented below.
 
-Another script was implemented to generate histograms and coverage analysis (run_analysis_reg.py). After executing regressions (see the Figure below), this script reads the generated artifacts, calculates how many instructions were executed, the percentage of execution, plots the histogram, and calculates the percentage of instructions that were exercised compared to all expected instructions (Annex). It is demonstrated in the next Section.
+### TEST_ONLY_DATA - Regression 1
 
-![regressions_sample](./images/regressions_sample.png "regressions_sample")
+#### Configuration
 
-## Results (Measure, refine, and validate)
+- num_of_tests = 10
+- total_instructions = 2
 
-The results from the application of the Methodology defined will be presented in this Section, as well as the bugs found.
+#### Result
 
-### Test: TEST_ONLY_DATA
+PASS.
 
-#### Regression 1
+![Regression 1 results for TEST_ONLY_DATA](./images/tod_10_r.png)
 
-Configuration:
+#### Histogram of Instructions Stimulated
 
-* num_of_tests = 10
-* total_instructions = 2
+Even though only data instructions were configured, the initialization of the system uses other instructions, which are captured in the analysis.
 
-Result:
+### TEST_ONLY_DATA - Regression 2
 
-![tod_10_r](./images/tod_10_r.png "tod_10_r")
+#### Configuration
 
-Histogram of instructions stimulated:
+- num_of_tests = 100
+- total_instructions = 20
 
-![tod_10](./images/tod_10.png "tod_10")
+#### Result
 
+PASS.
 
-#### Regression 2
+![Regression 2 results for TEST_ONLY_DATA](./images/tod_100_r.png)
 
-Configuration:
+#### Histogram of Instructions Stimulated
 
-* num_of_tests = 100
-* total_instructions = 20
+The instructions remained the same, but the frequency increased compared to regression 1.
 
-Result:
+### TEST_ONLY_COMPUTE - Regression 1
 
-![tod_
+#### Configuration
 
-100_r](./images/tod_100_r.png "tod_100_r")
+- num_of_tests = 10
+- total_instructions = 2
 
-Histogram of instructions stimulated:
+#### Result
 
-![tod_100](./images/tod_100.png "tod_100")
+The scoreboard captured bugs in the instructions compute OR and ORI. A deep investigation is presented after regressions.
 
-### Discussion and Coverage Status
+![Regression 1 results for TEST_ONLY_COMPUTE](./images/toc_10_r.png)
 
-Two regressions were executed. The first one with 10 tests and 2 instructions; no bugs were encountered. The second one, even with increased parameters num_of_tests to 100 and total_instructions to 20, which create a rich input vector for this configuration, no bugs were encountered either. It means that the bug is not in RV32I.data (see the histogram) but has bugs.
+#### Histogram of Instructions Stimulated
 
-The coverage was calculated for this case. Since it is a subset of all instructions, it didn't reach 100% as expected.
+As expected, the compute instructions are presented.
 
-![cov_t0](./images/cov_t0.png "cov_t0")
+![Histogram of instructions stimulated for TEST_ONLY_COMPUTE](./images/toc_10.png)
+
+### TEST_ONLY_COMPUTE - Regression 2
+
+#### Configuration
+
+- num_of_tests = 100
+- total_instructions = 2
+
+#### Result
+
+Scoreboard.
+
+![Regression 2 results for TEST_ONLY_COMPUTE](./images/toc_100_r.png)
+
+#### Histogram of Instructions Stimulated
+
+As expected, the compute instructions are presented.
+
+![Histogram of instructions stimulated for TEST_ONLY_COMPUTE](./images/toc_100.png)
+
+#### Discussion and Coverage Status
+
+The test captured a bug in the OR and ORI instruction. The cause of the bug was analyzed in detail and presented in the documentation.
+
+The coverage was calculated in regression 2, and it reached 70.21%. The increase in coverage is due to the set of instructions configured. The compute set (add, xor, xori, etc.) is greater than the compute data set. As a result, the coverage reached 70.21%.
+
+### TEST_CSR_DATA_FENCE - Regression 1
+
+#### Configuration
+
+- num_of_tests = 30
+- total_instructions = 3
+
+#### Result
+
+No bugs were encountered in this case.
+
+### TEST_CSR_DATA_FENCE - Regression 2
+
+#### Configuration
+
+- num_of_tests = 30
+- total_instructions = 10
+
+#### Result
+
+The instruction `csrrci` appears in the Spike dump but not in the RTL dump, resulting in an inconsistency. Therefore, the test environment returns a bug. However, this bug seems to be related to the tool rather than the design. As a result, it will not be considered a bug in `riscv_buggy`.
+
+![Regression 2 results for TEST_CSR_DATA_FENCE](./images/tcdf_reg2.png)
+
+### TEST_CTRL_DATA
+
+The method was executed under this configuration and demonstrated exceptional stability with no encountered bugs, even during exhaustive stimulation.
+
+## Conclusion for `riscv_buggy`
+
+Based on the tested extensions and strategy, the result of `riscv_buggy` verification is summarized below. The tests encountered bugs in the OR and ORI instructions and an inconsistency in CSR.
 
 ```
-Instructions Tested: 24/47
-Percentage of Instructions Tested: 51.06%
+Extension          RESULT/STATUS
+rel_sys.csr        INCONSISTENT
+rel_rv32i.ctrl     NO BUGS
+rel_rv32i.compute  BUGS: OR/ORI instr.
+rel_rv32i.data     NO BUGS
+rel_rv32i.fence    NO BUGS
 ```
 
-### Test: TEST_ONLY_COMPUTE
+Considering all the regression results, the specified coverage reaches 100%. However, it is important to note that due to the encountered bugs, merging the results might not provide a meaningful representation of the overall coverage in this case. The identified bugs should be carefully addressed and resolved before concluding the final coverage assessment.
 
-#### Regression 1
-
-Configuration:
-
-* num_of_tests = 10
-* total_instructions = 2
-
-Result:
-
-![toc_10_r](./images/toc_10_r.png "toc_10_r")
-
-Histogram of instructions stimulated:
-
-![toc_10](./images/toc_10.png "toc_10")
-
-
-#### Regression 2
-
-Configuration:
-
-* num_of_tests = 100
-* total_instructions = 2
-
-Result:
-
-![toc_100_r](./images/toc_100_r.png "toc_100_r")
-
-Histogram of instructions stimulated:
-
-![toc_100](./images/toc_100.png "toc_100")
-
-### Discussion and Coverage Status
-
-#### Analysis of Bug and "Fake" Bugs
-
-The test captured a bug in OR and ORI instructions. To understand the cause of the bug, let's consider the scenario presented below.
-
-![ori_bug_anal2](./images/ori_bug_anal2.png "ori_bug_anal2")
-
-The highlighted instruction below. Analyzing the literal operation (Figure below), it's possible to understand the real cause of the bug. When A and B are equal to 1, the output bit expected is inverted. The OR instruction also has a bug, and the same analysis can be done to verify the cause in detail.
-
-```
-ori s11, t2, 1276 
-```
-
-![ori_bug_anal](./images/ori_bug_anal.png "ori_bug_anal")
-
-If we increase the number of instructions, the test will return many bugs. However, without an accurate analysis, it's hard to identify if it is a real bug or a bug generated due to the right value assigned to registers after the OR or ORI operation, "fake bug." As a result, it's safer and easier, in terms of bug capture, to keep the number of instructions equal to one or two and increase the number of tests.
-
-#### Coverage
-
-The coverage was calculated in regression 2, and the result is shown below. The increase in relation to the last coverage is due to the set of instructions configured. The compute set (add, xor, xori, etc.) is greater than the compute data set. As a result, the coverage reached 70.21%.
-
-Instructions Tested: 33/47
-Percentage of Instructions Tested: 70.21%
-
-The percentage of occurrence is presented below.
-
-![cov_t1](./images/cov_t1.png "cov_t1")
-
-### Test: TEST_CSR_DATA_FENCE
-
-#### Regression 1: no bugs detected
-
-Configuration:
-
-* num_of_tests = 30
-* total_instructions = 3
-
-Result:
-
-No bugs was encountered in this case.
-
-#### Regression 2: bugs non-identified detected
-
-Configuration:
-
-* num_of_tests = 30
-* total_instructions = 10
-
-Result:
-
-![tcdf_reg2](./images/tcdf_reg2.png "tcdf_reg2")
-
-#### Conclusion
-
-The enviroment is inconsistent. No time to investigate the real cause.
-
-### Test: TEST_CTRL_DATA
-
-The same method was made in this configuration and no bugs encountered, even with a exaustive stimulation.
-
-# Conclusion / Summary
-
-## Scoreboard
-
-Considering the tested extensions the summary to riscv_buggy was:
-
-```
-rel_sys.csr         # INCONSISTENT
-rel_rv32i.ctrl:     # NO BUGS
-rel_rv32i.compute:  # BUGS: OR / ORI operation
-rel_rv32i.data:     # NO BUGS
-rel_rv32i.fence:    # NO BUGS
-```
-
-## Coverage
-
-Merging all results of regression the coverage specified reaches 100%. However, it doesn't make sense to do here due to the bugs encountered.
-
-# Annex
-
-## RISC-V RV32I Base Integer Instructions Card (need to be reviewed)
-
-| Instruction | Type          | Opcode   | funct3 | funct7 | Format                                 | Description                            |
-|-------------|---------------|----------|--------|--------|----------------------------------------|----------------------------------------|
-| `ADD`       | R-Type        | 0110011  | 0x0    | 0x00   | rd = rs1 + rs2                        | Add                                  |
-| `SUB`       | R-Type        | 0110011  | 0x0    | 0x20   | rd = rs1 - rs2                        | Subtract                             |
-| `XOR`       | R-Type        | 0110011  | 0x4    | 0x00   | rd = rs1 ^ rs2                        | XOR (Bitwise Exclusive OR)           |
-| `OR`        | R-Type        | 0110011  | 0x6    | 0x00   | rd = rs1 \| rs2                       | OR (Bitwise OR)                      |
-| `AND`       | R-Type        | 0110011  | 0x7    | 0x00   | rd = rs1 & rs2                        | AND (Bitwise AND)                    |
-| `SLL`       | R-Type        | 0110011  | 0x1    | 0x00   | rd = rs1 << rs2                       | Shift Left Logical                   |
-| `SRL`       | R-Type        | 0110011  | 0x5    | 0x00   | rd = rs1 >> rs2                       | Shift Right Logical                  |
-| `SRA`       | R-Type        | 0110011  | 0x5    | 0x20   | rd = rs1 >> rs2 (msb-extended)       | Shift Right Arithmetic               |
-| `SLT`       | R-Type        | 0110011  | 0x2    | 0x00   | rd = (rs1 < rs2) ? 1 : 0             | Set Less Than                        |
-| `SLTU`      | R-Type        | 0110011  | 0x3    | 0x00   | rd = (rs1 < rs2) ? 1 : 0 (zero-ext.) | Set Less Than (Unsigned)             |
-| `ADDI`      | I-Type        | 0010011  | 0x0    | -      | rd = rs1 + imm                       | Add Immediate                        |
-| `XORI`      | I-Type        | 0010011  | 0x4    | -      | rd = rs1 ^ imm                       | XOR Immediate                        |
-| `ORI`       | I-Type        | 0010011  | 0x6    | -      | rd = rs1 \| imm                      | OR Immediate                         |
-| `ANDI`      | I-Type        | 0010011  | 0x7    | -      | rd = rs1 & imm                       | AND Immediate                        |
-| `SLLI`      | I-Type        | 0010011  | 0x1    | 0x00   | rd = rs1 << imm[0:4]                 | Shift Left Logical Immediate         |
-| `SRLI`      | I-Type        | 0010011  | 0x5    | 0x00   | rd = rs1 >> imm[0:4]                 | Shift Right Logical Immediate        |
-| `SRAI`      | I-Type        | 0010011  | 0x5    | 0x20   | rd = rs1 >> imm[0:4] (msb-extended) | Shift Right Arithmetic Immediate     |
-| `SLTI`      | I-Type        | 0010011  | 0x2    | -      | rd = (rs1 < imm) ? 1 : 0             | Set Less Than Immediate              |
-| `SLTIU`     | I-Type        | 0010011  | 0x3    | -      | rd = (rs1 < imm) ? 1 : 0 (zero-ext.) | Set Less Than Immediate (Unsigned)   |
-| `LB`        | I-Type        | 0000011  | 0x0    | -      | rd = M[rs1 + imm][0:7]               | Load Byte                            |
-| `LH`        | I-Type        | 0000011  | 0x1    | -      | rd = M[rs1 + imm][0:15]              | Load Half                            |
-| `LW`        | I-Type        | 0000011  | 0x2    | -      | rd = M[rs1 + imm][0:31]              | Load Word                            |
-| `LBU`       | I-Type        | 0000011  | 0x4    | -      | rd = M[rs1 + imm][0:7] (zero-ext.)   | Load Byte (Unsigned)                 |
-| `LHU`       | I-Type        | 0000011  | 0x5    | -      | rd = M[rs1 + imm][0:15] (zero-ext.)  | Load Half (Unsigned)                
-| `SB`        | S-Type        | 0100011  | 0x0    | -      | M[rs1 + imm][0:7] = rs2[0:7]         | Store Byte                           |
-| `SH`        | S-Type        | 0100011  | 0x1    | -      | M[rs1 + imm][0:15] = rs2[0:15]       | Store Half                           |
-| `SW`        | S-Type        | 0100011  | 0x2    | -      | M[rs1 + imm][0:31] = rs2[0:31]       | Store Word                           |
-| `BEQ`       | B-Type        | 1100011  | 0x0    | -      | if (rs1 == rs2) PC += imm             | Branch if Equal                      |
-| `BNE`       | B-Type        | 1100011  | 0x1    | -      | if (rs1 != rs2) PC += imm             | Branch if Not Equal                  |
-| `BLT`       | B-Type        | 1100011  | 0x4    | -      | if (rs1 < rs2) PC += imm              | Branch if Less Than                  |
-| `BGE`       | B-Type        | 1100011  | 0x5    | -      | if (rs1 >= rs2) PC += imm             | Branch if Greater Than or Equal      |
-| `BLTU`      | B-Type        | 1100011  | 0x6    | -      | if (rs1 < rs2) PC += imm (zero-ext.)  | Branch if Less Than (Unsigned)       |
-| `BGEU`      | B-Type        | 1100011  | 0x7    | -      | if (rs1 >= rs2) PC += imm (zero-ext.) | Branch if Greater Than or Equal (Unsigned) |
-| `JAL`       | J-Type        | 1101111  | -      | -      | rd = PC + 4, PC += imm               | Jump And Link                        |
-| `JALR`      | I-Type        | 1100111  | 0x0    | -      | rd = PC + 4, PC = rs1 + imm          | Jump And Link Register               |
-| `LUI`       | U-Type        | 0110111  | -      | -      | rd = imm << 12                       | Load Upper Immediate                 |
-| `AUIPC`     | U-Type        | 0010111  | -      | -      | rd = PC + (imm << 12)                | Add Upper Immediate to PC            |
-| `ECALL`     | I-Type        | 1110011  | 0x0    | -      | imm                                  | Environment Call                     |
-
-## RISC-V CSR Instructions Card
-
-| Instruction | Type          | Opcode   | funct3 | funct7 | Format                                 | Description                            |
-|-------------|---------------|----------|--------|--------|----------------------------------------|----------------------------------------|
-| `CSRR`     
-| `CSRS`   
-| `CSRRW`     | I-Type        | 1110011  | 0x1    | -      | rd = M[CSR], M[CSR] = rs1            | Atomic Read/Write CSR                 |
-| `CSRRS`     | I-Type        | 1110011  | 0x2    | -      | rd = M[CSR], M[CSR] |= rs1           | Atomic Read and Set CSR               |
-| `CSRRC`     | I-Type        | 1110011  | 0x3    | -      | rd = M[CSR], M[CSR] &= ~rs1          | Atomic Read and Clear CSR             |
-| `CSRRWI`    | I-Type        | 1110011  | 0x5    | -      | rd = M[CSR], M[CSR] = zimm           | Atomic Read/Write CSR with Immediate  |
-| `CSRRSI`    | I-Type        | 1110011  | 0x6    | -      | rd = M[CSR], M[CSR] |= zimm          | Atomic Read and Set CSR with Immediate |
-| `CSRRCI`    | I-Type        | 1110011  | 0x7    | -      | rd = M[CSR], M[CSR] &= ~zimm         | Atomic Read and Clear CSR with Immediate |
+In a real development flow, these results should be discussed with the designer responsible to address the problems. After that, the same tests should pass, and finally, a refinement in the VP also should be made to stimulate the design in different ways and achieve coverage.
