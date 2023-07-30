@@ -263,9 +263,9 @@ Result:
 
 The enviroment is inconsistent. No time to investigate the real cause.
 
-### Test: TEST_CSR_DATA_FENCE
+### Test: TEST_CTRL_DATA
 
-The same method was made and no bugs encountered.
+The same method was made in this configuration and no bugs encountered, even with a exaustive stimulation.
 
 # Conclusion / Summary
 
